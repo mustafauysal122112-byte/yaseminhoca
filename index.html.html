@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Öğrencisinden Yasemin Hocaya</title>
+
+    <style>
+        /* --- GENEL AYARLAR --- */
+        body {
+            font-family: 'Georgia', serif;
+            color: #333;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            text-align: center;
+            overflow: hidden;
+            background-color: #54056a; /* Koyu canlı mor */
+            position: relative; 
+            transition: background-color 0.5s;
+        }
+
+        /* --- HAVAI FİŞEK STİLLERİ --- */
+        .firework-particle {
+            position: absolute;
+            background-color: #fff;
+            border-radius: 50%;
+            opacity: 0;
+            transform: scale(0);
+            /* KRİTİK DÜZELTME: z-index değeri düşürülerek mesaj kartının arkasında kalması sağlandı. */
+            z-index: 5; 
+        }
+
+        @keyframes fireworkExplosion {
+            0% {
+                transform: scale(0.1);
+                opacity: 1;
+            }
+            50% {
+                transform: scale(0.5);
+                opacity: 0.8;
+                box-shadow: 0 0 15px 5px rgba(255, 255, 255, 0.7); 
+            }
+            100% {
+                transform: scale(0.01) translateY(-50px);
+                opacity: 0;
+            }
+        }
+
+        /* --- ZARF ALANI AYARLARI --- */
+        .envelope-wrapper {
+            position: relative;
+            width: 450px; 
+            height: 250px; 
+            perspective: 1000px;
+            cursor: pointer;
+            box-shadow: 0 0 40px rgba(0, 0, 0, 0.5); 
+            border-radius: 10px;
+            /* Zarfı da havai fişeklerin önünde tutalım */
+            z-index: 10;
+        }
+        
+        .envelope-front, .envelope-back, .envelope-top-flap, .envelope-bottom-flap, .seal {
+            transition: transform 0.8s ease-in-out, opacity 0.5s ease-out;
+            position: absolute;
+        }
+
+        .envelope-front, .envelope-bottom-flap, .envelope-top-flap {
+            border: 1px solid #ddd;
+            background-color: #fff;
+            border-radius: 5px;
+        }
+
+        .envelope-front {
+            width: 100%; height: 100%; z-index: 2;
+        }
+
+        .envelope-bottom-flap {
+            width: 0; height: 0; border-left: 225px solid transparent; border-right: 225px solid transparent;
+            border-top: 125px solid #e0e0e0; bottom: 0; left: 0; z-index: 3; transform-origin: bottom; border-radius: 0 0 5px 5px;
+        }
+        
+        .envelope-top-flap {
+            width: 0; height: 0; border-left: 225px solid transparent; border-right: 225px solid transparent;
+            border-bottom: 125px solid #54056a; top: 0; left: 0; z-index: 4; transform-origin: top; border-radius: 5px 5px 0 0;
+            transform: rotateX(0deg); 
+        }
+
+        .seal {
+            width: 60px; height: 60px; background-color: rgb(247, 246, 244); border-radius: 50%; top: 50%; left: 50%;
+            transform: translate(-50%, -50%) translateY(-20px); z-index: 5; box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            display: flex; justify-content: center; align-items: center; font-size: 1.8em; color: #af090c;
+        }
+        .seal::before { content: '💖'; position: absolute; font-size: 1.2em; line-height: 1; }
+
+        .message-card {
+            background-color: #fff;
+            width: calc(100% - 40px);
+            height: calc(100% - 40px);
+            top: 20px;
+            left: 20px;
+            z-index: 1; 
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            padding: 20px;
+            box-sizing: border-box;
+            opacity: 0; 
+            transform: translateY(100%) scale(1);
+            transition: opacity 0.8s ease-out 0.8s, transform 1s ease-out 0.8s, width 1s ease 2s, height 1s ease 2s;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            overflow: auto; 
+            text-align: left;
+        }
+
+        .click-prompt {
+            position: absolute; bottom: -50px; width: 100%; font-size: 1.2em; color: #fff; 
+            font-weight: bold;
+            opacity: 1; transition: opacity 0.5s ease-out;
+        }
+        
+        /* --- ZARF AÇILDIĞINDAKİ STİLLER --- */
+        .envelope-wrapper.open .envelope-top-flap {
+            transform: rotateX(-180deg); z-index: 0; opacity: 0; 
+        }
+        .envelope-wrapper.open .seal { opacity: 0; }
+        .envelope-wrapper.open .envelope-front, 
+        .envelope-wrapper.open .envelope-bottom-flap { opacity: 0; }
+        .envelope-wrapper.open .click-prompt { opacity: 0; }
+        
+        .envelope-wrapper.open .message-card {
+            opacity: 1; 
+            transform: translateY(0px) scale(1); 
+            /* KRİTİK: Mesaj kartının z-index değeri çok yüksek olmalı, havai fişeklerden (z-index: 5) de yüksek olmalı */
+            z-index: 200; 
+            height: auto; 
+            max-height: 90vh; 
+            
+            position: fixed; 
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%) scale(1); 
+            width: 700px; 
+            height: 500px; 
+            max-width: 90vw;
+            
+            transition: opacity 0.8s ease-out 0.8s, transform 1s ease-out 0.8s, 
+                        width 1s ease 2s, height 1s ease 2s, 
+                        top 1s ease 2s, left 1s ease 2s,
+                        box-shadow 0.5s ease 2s;
+            box-shadow: 0 10px 50px rgba(0, 0, 0, 0.4);
+        }
+
+        /* Mesaj kartının içindeki stiller... */
+        .message-card .card-header h1 {
+            color: #300456; font-size: 1.8em; border-bottom: 2px solid #300456;
+            padding-bottom: 10px; margin-bottom: 20px; text-align: center;
+        }
+        .message-card #message {
+            font-size: 1.1em; line-height: 1.5; margin: 10px 0; flex-grow: 1; color: #222; 
+        }
+        .message-card blockquote {
+            font-style: italic; color: #7f8c8d; margin: 10px auto; padding: 5px 15px;
+            border-left: 3px solid #300456; max-width: 90%; font-size: 0.9em; text-align: left;
+        }
+        .message-card .signature {
+            margin-top: 20px; font-size: 1em; font-weight: bold; color: #333; text-align: right;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="envelope-wrapper" id="envelope">
+        <div class="envelope-front"></div>
+        <div class="envelope-bottom-flap"></div>
+        <div class="envelope-top-flap"></div>
+        <div class="seal"></div>
+        
+        <div class="message-card">
+            <div class="card-header">
+                <h1>Değerli Yasemin Hocam,</h1>
+            </div>
+            <p id="message"></p>
+            <blockquote>
+                "Hayat, iyi bir öğretmenin eseridir."
+            </blockquote>
+            <p class="signature">
+                Saygılarla, Öğrenciniz Mustafa
+            </p>
+        </div>
+        
+        <div class="click-prompt">Açmak için lütfen basınız</div>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const envelope = document.getElementById('envelope');
+            const messageElement = document.getElementById('message');
+            const fullMessage = 
+`Sevgili Yasemin HOCAM,
+Siz sadece öğretmenim değil, aynı zamanda hayatıma ışık tutan, zor zamanlarımda yanımda olan sevgi dolu bir öğretmen oldunuz. Siz bizlere her zaman azmi ve başarmayı bu yolda birbirimize destek olmayı öğrettiniz.
+Bana ve öğrencilerinize kattığınız tüm değerler için minnettarım.
+Yüreği sevgi dolu, emekçi öğretmenler gününüz kutlu olsun. İyi ki varsınız!💖`;
+
+            let index = 0;
+            const typingSpeed = 50; 
+            let isTypingStarted = false;
+
+            function createFirework(x, y) {
+                const numParticles = 20; 
+                const colors = ['#fff', '#ffd700', '#ff00ff', '#00ffff']; 
+
+                for (let i = 0; i < numParticles; i++) {
+                    const particle = document.createElement('div');
+                    particle.classList.add('firework-particle');
+                    document.body.appendChild(particle);
+
+                    const size = Math.random() * 8 + 2; 
+                    particle.style.width = `${size}px`;
+                    particle.style.height = `${size}px`;
+                    
+                    particle.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+
+                    particle.style.left = `${x}px`;
+                    particle.style.top = `${y}px`;
+
+                    const angle = Math.random() * Math.PI * 2; 
+                    const distance = Math.random() * 80 + 50; 
+                    const endX = x + distance * Math.cos(angle);
+                    const endY = y + distance * Math.sin(angle);
+
+                    
+                    // Animasyonu başlat
+                    particle.animate([
+                        { transform: `translate(-50%, -50%) scale(0.1)`, opacity: 1 },
+                        { transform: `translate(${endX - x}px, ${endY - y}px) scale(0.8)`, opacity: 0.8, boxShadow: '0 0 15px 5px rgba(255, 255, 255, 0.7)' },
+                        { transform: `translate(${endX - x}px, ${endY - y - 50}px) scale(0.01)`, opacity: 0 }
+                    ], {
+                        duration: Math.random() * 1000 + 1000, 
+                        easing: 'ease-out',
+                        fill: 'forwards'
+                    });
+
+                    particle.addEventListener('animationend', () => {
+                        particle.remove();
+                    });
+                }
+            }
+
+            // --- HAVAI FİŞEKLERİ SÜREKLİ PATLATAN FONKSİYON ---
+            function startContinuousFireworks() {
+                setInterval(() => {
+                    // Ekranın rastgele bir yerinde patlama
+                    const randomX = Math.random() * window.innerWidth;
+                    const randomY = Math.random() * window.innerHeight;
+                    createFirework(randomX, randomY);
+
+                    // Daha küçük bir ihtimalle ikinci bir patlama
+                    if (Math.random() < 0.3) { 
+                        const randomX2 = Math.random() * window.innerWidth;
+                        const randomY2 = Math.random() * window.innerHeight;
+                        createFirework(randomX2, randomY2);
+                    }
+                }, 1000); // Her 1 saniyede bir yeni havai fişek patlat
+            }
+            
+            // Sayfa yüklendiğinde sürekli havai fişekleri başlat
+            startContinuousFireworks();
+            // --- SÜREKLİ HAVAI FİŞEK SONU ---
+
+
+            function typeWriter() {
+                if (index < fullMessage.length) {
+                    if (fullMessage.charAt(index) === '\n') {
+                        messageElement.innerHTML += '<br>';
+                    } else {
+                        messageElement.innerHTML += fullMessage.charAt(index);
+                    }
+                    index++;
+                    const currentSpeed = (fullMessage.length - index < 10) ? 80 : typingSpeed; 
+                    setTimeout(typeWriter, currentSpeed);
+                }
+            }
+
+            envelope.addEventListener('click', function(event) {
+                if (!envelope.classList.contains('open')) {
+                    envelope.classList.add('open');
+                    
+                    if (!isTypingStarted) {
+                        setTimeout(typeWriter, 2500); 
+                        isTypingStarted = true;
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>
